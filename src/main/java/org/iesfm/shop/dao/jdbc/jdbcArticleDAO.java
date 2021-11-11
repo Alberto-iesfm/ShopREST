@@ -29,6 +29,10 @@ public class jdbcArticleDAO implements ArticleDAO {
     private final static String INSERT_TAGS = "INSERT INTO Tag (article_id, name) " +
             "VALUES (:articleId, :tag)";
 
+    private final static String UPDATE_ARTICLE = "UPDATE Article " +
+            "SET name = :name, price = :price " +
+            "WHERE id = :id";
+
     public jdbcArticleDAO(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -90,17 +94,21 @@ public class jdbcArticleDAO implements ArticleDAO {
     public Article get(int id) {
         Map<String, Object> params = new HashMap<>();
         params.put("id", id);
-        return jdbcTemplate.queryForObject(
-                SELECT_ARTICLE,
-                params,
-                (rs, rownum) ->
-                        new Article(
-                                rs.getInt("id"),
-                                rs.getString("name"),
-                                rs.getDouble("price"),
-                                getTags(rs.getInt("id"))
-                        )
-        );
+        try {
+            return jdbcTemplate.queryForObject(
+                    SELECT_ARTICLE,
+                    params,
+                    (rs, rownum) ->
+                            new Article(
+                                    rs.getInt("id"),
+                                    rs.getString("name"),
+                                    rs.getDouble("price"),
+                                    getTags(rs.getInt("id"))
+                            )
+            );
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private void insertTags(int articleId, Set<String> tags) {
@@ -129,6 +137,10 @@ public class jdbcArticleDAO implements ArticleDAO {
 
     @Override
     public boolean update(Article article) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("id", article.getId());
+        params.put("name", article.getName());
+        params.put("price", article.getPrice());
         return false;
     }
 
