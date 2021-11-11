@@ -33,6 +33,9 @@ public class jdbcArticleDAO implements ArticleDAO {
             "SET name = :name, price = :price " +
             "WHERE id = :id";
 
+    private final static String UPDATE_TAGS = "UPDATE Tag " +
+            "";
+
     public jdbcArticleDAO(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
@@ -135,12 +138,22 @@ public class jdbcArticleDAO implements ArticleDAO {
         }
     }
 
+    private void updateTags (int articleId, Set<String> tags){
+        for (String tag : tags) {
+            Map<String, Object> params = new HashMap<>();
+            params.put("articleId", articleId);
+            params.put("tag", tag);
+        }
+    }
+
     @Override
     public boolean update(Article article) {
         Map<String, Object> params = new HashMap<>();
         params.put("id", article.getId());
         params.put("name", article.getName());
         params.put("price", article.getPrice());
+
+        jdbcTemplate.update(UPDATE_ARTICLE, params);
         return false;
     }
 
