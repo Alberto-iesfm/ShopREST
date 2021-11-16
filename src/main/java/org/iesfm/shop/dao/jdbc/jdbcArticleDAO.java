@@ -79,18 +79,23 @@ public class jdbcArticleDAO implements ArticleDAO {
     @Override
     public List<Article> list(String tag) {
         Map<String, Object> params = new HashMap<>();
-        params.put("id", getTagArticles(tag));
-        return jdbcTemplate.query(
-                SELECT_TAG_ARTICLES,
-                params,
-                (rs, rowNum) ->
-                        new Article(
-                                rs.getInt("id"),
-                                rs.getString("name"),
-                                rs.getDouble("price"),
-                                getTags(rs.getInt("id"))
-                        )
-        );
+        List<Article> articles = new LinkedList<>();
+        for (int id : getTagArticles(tag)) {
+            params.put("id", id);
+            jdbcTemplate.query(
+                    SELECT_TAG_ARTICLES,
+                    params,
+                    (rs, rowNum) ->
+                            articles.add(new Article(
+                                            rs.getInt("id"),
+                                            rs.getString("name"),
+                                            rs.getDouble("price"),
+                                            getTags(rs.getInt("id"))
+                                    )
+                            )
+            );
+        }
+        return articles;
     }
 
     @Override
@@ -138,7 +143,7 @@ public class jdbcArticleDAO implements ArticleDAO {
         }
     }
 
-    private void updateTags (int articleId, Set<String> tags){
+    private void updateTags(int articleId, Set<String> tags) {
         for (String tag : tags) {
             Map<String, Object> params = new HashMap<>();
             params.put("articleId", articleId);
