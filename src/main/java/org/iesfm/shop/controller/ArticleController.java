@@ -28,7 +28,7 @@ public class ArticleController {
     @RequestMapping(method = RequestMethod.GET, path = "/articles/{id}")
     public Article getArticle (@PathVariable ("id") int id){
         Article article = articleDAO.get(id);
-        if (article == null){
+        if (article == null) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND, "Articulo no encontrado"
             );
