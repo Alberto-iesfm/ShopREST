@@ -2,12 +2,21 @@ package org.iesfm.shop.dao.jdbc;
 
 import org.iesfm.shop.Article;
 import org.iesfm.shop.dao.ArticleDAO;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 
 import java.util.*;
 
 public class jdbcArticleDAO implements ArticleDAO {
     private NamedParameterJdbcTemplate jdbcTemplate;
+
+    private final RowMapper<Article> ARTICLE_ROW_MAPPER = (rs, rowNum) ->
+            new Article(
+                    rs.getInt("id"),
+                    rs.getString("name"),
+                    rs.getDouble("price"),
+                    getTags(rs.getInt("id"))
+            );
 
     private final static String SELECT_ARTICLES = "SELECT * FROM Article";
 
@@ -33,8 +42,11 @@ public class jdbcArticleDAO implements ArticleDAO {
             "SET name = :name, price = :price " +
             "WHERE id = :id";
 
-    private final static String UPDATE_TAGS = "UPDATE Tag " +
-            "";
+    private final static String DELETE_TAGS = "DELETE FROM Tag " +
+            "WHERE articleId = :articleId";
+
+    private final static String DELETE_ARTICLE = "DELETE FROM Article " +
+            "WHERE id = :id";
 
     public jdbcArticleDAO(NamedParameterJdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
@@ -44,13 +56,7 @@ public class jdbcArticleDAO implements ArticleDAO {
     public List<Article> list() {
         return jdbcTemplate.query(
                 SELECT_ARTICLES,
-                (rs, rowNum) ->
-                        new Article(
-                                rs.getInt("id"),
-                                rs.getString("name"),
-                                rs.getDouble("price"),
-                                getTags(rs.getInt("id"))
-                        )
+                ARTICLE_ROW_MAPPER
         );
     }
 
@@ -85,14 +91,7 @@ public class jdbcArticleDAO implements ArticleDAO {
             jdbcTemplate.query(
                     SELECT_TAG_ARTICLES,
                     params,
-                    (rs, rowNum) ->
-                            articles.add(new Article(
-                                            rs.getInt("id"),
-                                            rs.getString("name"),
-                                            rs.getDouble("price"),
-                                            getTags(rs.getInt("id"))
-                                    )
-                            )
+                    ARTICLE_ROW_MAPPER
             );
         }
         return articles;
@@ -106,13 +105,7 @@ public class jdbcArticleDAO implements ArticleDAO {
             return jdbcTemplate.queryForObject(
                     SELECT_ARTICLE,
                     params,
-                    (rs, rownum) ->
-                            new Article(
-                                    rs.getInt("id"),
-                                    rs.getString("name"),
-                                    rs.getDouble("price"),
-                                    getTags(rs.getInt("id"))
-                            )
+                    ARTICLE_ROW_MAPPER
             );
         } catch (Exception e) {
             return null;
@@ -144,11 +137,11 @@ public class jdbcArticleDAO implements ArticleDAO {
     }
 
     private void updateTags(int articleId, Set<String> tags) {
-        for (String tag : tags) {
             Map<String, Object> params = new HashMap<>();
             params.put("articleId", articleId);
-            params.put("tag", tag);
-        }
+
+            jdbcTemplate.update(DELETE_TAGS, params);
+            insertTags(articleId, tags);
     }
 
     @Override
@@ -158,12 +151,15 @@ public class jdbcArticleDAO implements ArticleDAO {
         params.put("name", article.getName());
         params.put("price", article.getPrice());
 
-        jdbcTemplate.update(UPDATE_ARTICLE, params);
-        return false;
+        updateTags(article.getId(), article.getTags());
+        return jdbcTemplate.update(UPDATE_ARTICLE, params) == 1;
     }
 
     @Override
     public boolean delete(int id) {
-        return false;
+        Map<String, Object> params = new HashMap<>();
+        params.put("id", id);
+
+        return jdbcTemplate.update(DELETE_ARTICLE, params) == 1;
     }
 }
